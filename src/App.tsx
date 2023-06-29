@@ -1,7 +1,8 @@
-import { Refine, WelcomePage } from "@refinedev/core";
+import { Authenticated, Refine, WelcomePage } from "@refinedev/core";
 import { RefineKbar, RefineKbarProvider } from "@refinedev/kbar";
 
 import {
+  AuthPage,
   notificationProvider,
   RefineSnackbarProvider,
   ThemedLayoutV2,
@@ -18,12 +19,19 @@ import CssBaseline from "@mui/material/CssBaseline";
 import GlobalStyles from "@mui/material/GlobalStyles";
 import { MuiInferencer } from "@refinedev/inferencer/mui";
 import routerBindings, {
+  CatchAllNavigate,
   DocumentTitleHandler,
+  NavigateToResource,
   UnsavedChangesNotifier,
 } from "@refinedev/react-router-v6";
 import dataProvider from "@refinedev/simple-rest";
 import { BrowserRouter, Outlet, Route, Routes } from "react-router-dom";
 import { ColorModeContextProvider } from "./contexts/color-mode";
+import { RefinePostList } from "pages/blog-posts/list";
+import { RefinePostEdit } from "pages/blog-posts/edit";
+import { RefinePostShow } from "pages/blog-posts/show";
+import { RefinePostCreate } from "pages/blog-posts/create";
+import authProvider from "authProvider";
 
 function App() {
   return (
@@ -36,6 +44,7 @@ function App() {
             <Refine
               notificationProvider={notificationProvider}
               routerProvider={routerBindings}
+              authProvider={authProvider}
               dataProvider={{
                 default: dataProvider("https://api.fake-rest.refine.dev"),
                 typicode: dataProvider("https://jsonplaceholder.typicode.com"),
@@ -95,16 +104,19 @@ function App() {
               <Routes>
                 <Route
                   element={
-                    <ThemedLayoutV2>
-                      <Outlet />
-                    </ThemedLayoutV2>
+                    <Authenticated fallback={<CatchAllNavigate to="/login" />}>
+                      <ThemedLayoutV2>
+                        <Outlet />
+                      </ThemedLayoutV2>
+                    </Authenticated>
                   }
                 >
                   <Route index element={<WelcomePage />} />
-                  <Route path="blog-posts" element={<MuiInferencer />}>
-                    <Route path="show/:id" element={<MuiInferencer />} />
-                    <Route path="edit/:id" element={<MuiInferencer />} />
-                    <Route path="create" element={<MuiInferencer />} />
+                  <Route path="blog-posts">
+                    <Route index element={<RefinePostList />} />
+                    <Route path="show/:id" element={<RefinePostShow />} />
+                    <Route path="edit/:id" element={<RefinePostEdit />} />
+                    <Route path="create" element={<RefinePostCreate />} />
                   </Route>
 
                   <Route path="posts" element={<MuiInferencer />}>
@@ -114,6 +126,27 @@ function App() {
                   </Route>
 
                   <Route path="test" element={<h1>Hello World</h1>} />
+                </Route>
+                <Route
+                  element={
+                    <Authenticated fallback={<Outlet />}>
+                      <NavigateToResource />
+                    </Authenticated>
+                  }
+                >
+                  <Route path="/login" element={<AuthPage type="login" />} />
+                  <Route
+                    path="/register"
+                    element={<AuthPage type="register" />}
+                  />
+                  <Route
+                    path="/forgot-password"
+                    element={<AuthPage type="forgotPassword" />}
+                  />
+                  <Route
+                    path="/update-password"
+                    element={<AuthPage type="updatePassword" />}
+                  />
                 </Route>
               </Routes>
               <RefineKbar />
